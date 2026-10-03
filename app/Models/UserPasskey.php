@@ -2,7 +2,6 @@
 
 namespace Everest\Models;
 
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -71,13 +70,6 @@ class UserPasskey extends Model
         'credential_id' => ['required', 'string', 'max:255'],
         'credential' => ['required', 'string'],
     ];
-
-    protected static function booted(): void
-    {
-        static::creating(function (self $passkey) {
-            $passkey->uuid = $passkey->uuid ?? Str::uuid()->toString();
-        });
-    }
 
     /**
      * @return BelongsTo<User, $this>
