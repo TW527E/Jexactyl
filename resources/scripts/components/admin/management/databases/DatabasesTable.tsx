@@ -16,7 +16,6 @@ import { useContext, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
 import { DatabaseEntriesContext as DatabasesContext } from '@/api/routes/admin/databases';
-import DatabaseStatus from './DatabaseStatus';
 
 export default () => {
     const { colors } = useStoreState(state => state.theme.data!);
@@ -65,7 +64,6 @@ export default () => {
                                 />
                                 <TableHeader name={'Address'} />
                                 <TableHeader name={'Username'} />
-                                <TableHeader name={'Status'} />
                             </TableHead>
 
                             <TableBody>
@@ -103,9 +101,6 @@ export default () => {
 
                                             <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
                                                 {database.username}
-                                            </td>
-                                            <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                <DatabaseStatus database={database.getAddress()} />
                                             </td>
                                         </TableRow>
                                     ))}

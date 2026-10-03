@@ -12,6 +12,7 @@ import { createDatabaseEntry as createDatabase } from '@/api/routes/admin/databa
 import { useStoreActions } from '@/state/hooks';
 import { InformationContainer, Values } from '@admin/management/databases/DatabaseEditContainer';
 import { FormikHelpers } from 'formik';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 
 interface Props {
     filters?: Filters;
@@ -34,8 +35,9 @@ export default ({ filters }: Props) => {
     };
 
     return (
-        <AdminContentBlock>
+        <AdminContentBlock showFlashKey={'databases'}>
             <Dialog title={'Create a New Database'} open={open} onClose={() => setOpen(false)} size={'lg'}>
+                <FlashMessageRender byKey={'admin:databases'} className={'mb-4'} />
                 <InformationContainer title={'Information'} onSubmit={submit} />
             </Dialog>
             <div className={'w-full flex flex-row items-center mb-8'}>

@@ -146,7 +146,7 @@ const EditInformationContainer = () => {
         clearFlashes('database');
 
         updateDatabase(database.id, name, host, port, username, password || undefined)
-            .then(() => setDatabase({ ...database, name, host, port, username }))
+            .then(updated => setDatabase(updated))
             .catch(error => {
                 console.error(error);
                 clearAndAddHttpError({ key: 'database', error });
