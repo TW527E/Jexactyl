@@ -29,5 +29,4 @@ function useUserSWRKey(context: Context): string {
     return useSWRKey(context, `user:${uuid}`);
 }
 
-export default useSWRKey;
 export { useServerSWRKey, useUserSWRKey };

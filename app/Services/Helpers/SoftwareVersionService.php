@@ -4,7 +4,6 @@ namespace Everest\Services\Helpers;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Everest\Exceptions\Service\Helper\CdnVersionFetchingException;
@@ -59,18 +58,6 @@ class SoftwareVersionService
         }
 
         return version_compare($version, $this->getLatestPanel()) >= 0;
-    }
-
-    /**
-     * Determine if a passed daemon version string is the latest.
-     */
-    public function isLatestWings(string $version): bool
-    {
-        if ($version === 'develop' || Str::startsWith($version, 'dev-')) {
-            return true;
-        }
-
-        return version_compare($version, $this->getLatestWings()) >= 0;
     }
 
     /**

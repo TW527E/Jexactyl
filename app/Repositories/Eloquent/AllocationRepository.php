@@ -17,20 +17,6 @@ class AllocationRepository extends EloquentRepository implements AllocationRepos
     }
 
     /**
-     * Return all the allocations that exist for a node that are not currently
-     * allocated.
-     */
-    public function getUnassignedAllocationIds(int $node): array
-    {
-        return Allocation::query()->select('id')
-            ->whereNull('server_id')
-            ->where('node_id', $node)
-            ->get()
-            ->pluck('id')
-            ->toArray();
-    }
-
-    /**
      * Return a concatenated result set of node ips that already have at least one
      * server assigned to that IP. This allows for filtering out sets for
      * dedicated allocation IPs.

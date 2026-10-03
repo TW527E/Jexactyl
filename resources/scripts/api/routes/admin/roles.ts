@@ -9,10 +9,6 @@ export interface Filters {
     name?: string;
 }
 
-export interface AdminRolePermissionFilters {
-    key?: string;
-}
-
 export interface AdminRolePermissions {
     [key: string]: {
         description: string;

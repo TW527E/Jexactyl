@@ -2,7 +2,6 @@
 
 namespace Everest\Events;
 
-use Illuminate\Support\Str;
 use Everest\Models\ActivityLog;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,11 +19,6 @@ class ActivityLogged extends Event
     public function actor(): ?Model
     {
         return $this->isSystem() ? null : $this->model->actor;
-    }
-
-    public function isServerEvent(): bool
-    {
-        return Str::startsWith($this->model->event, 'server:');
     }
 
     public function isSystem(): bool

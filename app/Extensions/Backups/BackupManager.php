@@ -138,14 +138,6 @@ class BackupManager
     }
 
     /**
-     * Set the default session driver name.
-     */
-    public function setDefaultAdapter(string $name): void
-    {
-        $this->config->set('backups.default', $name);
-    }
-
-    /**
      * Unset the given adapter instances.
      *
      * @param string|string[] $adapter

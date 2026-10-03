@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property int $activity_log_id
  * @property int $subject_id
  * @property string $subject_type
- * @property ActivityLog|null $activityLog
  * @property \Illuminate\Database\Eloquent\Model|\Eloquent|null $subject
  *
  * @method static \Illuminate\Database\Eloquent\Builder|ActivityLogSubject newModelQuery()
@@ -28,11 +27,6 @@ class ActivityLogSubject extends Pivot
     protected $table = 'activity_log_subjects';
 
     protected $guarded = ['id'];
-
-    public function activityLog()
-    {
-        return $this->belongsTo(ActivityLog::class);
-    }
 
     public function subject()
     {

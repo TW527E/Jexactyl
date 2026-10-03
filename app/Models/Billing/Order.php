@@ -116,45 +116,6 @@ class Order extends Model
     }
 
     /**
-     * Return whether a payment must be collected for this order.
-     */
-    public function requiresPayment(): bool
-    {
-        if ($this->total > 0.0) {
-            return true;
-        }
-
-        return false;
-
-    }
-
-    /**
-     * Return whether this order has already been processed.
-     */
-    public function isProcessed(): bool
-    {
-        if ($this->status === Order::STATUS_PROCESSED) {
-            return true;
-        }
-
-        return false;
-
-    }
-
-    /**
-     * Return whether this order is a renewal or new server.
-     */
-    public function isRenewal(): bool
-    {
-        if ($this->type === Order::TYPE_RENEWAL) {
-            return true;
-        }
-
-        return false;
-
-    }
-
-    /**
      * Assign a server ID to this model.
      */
     public function assignServer(Server $server): void

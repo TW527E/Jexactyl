@@ -103,43 +103,6 @@ class DaemonServerRepository extends DaemonRepository
     }
 
     /**
-     * Requests the daemon to create a full archive of the server. Once the daemon is finished
-     * they will send a POST request to "/api/remote/servers/{uuid}/archive" with a boolean.
-     *
-     * @throws DaemonConnectionException
-     */
-    public function requestArchive(): void
-    {
-        Assert::isInstanceOf($this->server, Server::class);
-
-        try {
-            $this->getHttpClient()->post(sprintf(
-                '/api/servers/%s/archive',
-                $this->server->uuid
-            ));
-        } catch (TransferException $exception) {
-            throw new DaemonConnectionException($exception);
-        }
-    }
-
-    /**
-     * Revokes a single user's JTI by using their ID. This is simply a helper function to
-     * make it easier to revoke tokens on the fly. This ensures that the JTI key is formatted
-     * correctly and avoids any costly mistakes in the codebase.
-     *
-     * @deprecated
-     * @see DaemonRevocationRepository::deauthorize()
-     *
-     * @throws DaemonConnectionException
-     */
-    public function revokeUserJTI(int $id): void
-    {
-        Assert::isInstanceOf($this->server, Server::class);
-
-        $this->revokeJTIs([md5($id . $this->server->uuid)]);
-    }
-
-    /**
      * Revokes an array of JWT JTI's by marking any token generated before the current time on
      * the Wings instance as being invalid.
      *

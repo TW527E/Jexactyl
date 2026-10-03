@@ -82,9 +82,4 @@ class DaemonConnectionException extends DisplayException
     {
         return $this->statusCode;
     }
-
-    public function getRequestId(): ?string
-    {
-        return $this->requestId;
-    }
 }

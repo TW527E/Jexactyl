@@ -5,14 +5,11 @@ namespace Everest\Services\Servers;
 use Everest\Models\Server;
 use Illuminate\Support\Arr;
 use Illuminate\Database\ConnectionInterface;
-use Everest\Traits\Services\ReturnsUpdatedModels;
 use Everest\Repositories\Wings\DaemonRevocationRepository;
 use Everest\Exceptions\Http\Connection\DaemonConnectionException;
 
 class DetailsModificationService
 {
-    use ReturnsUpdatedModels;
-
     /**
      * DetailsModificationService constructor.
      */

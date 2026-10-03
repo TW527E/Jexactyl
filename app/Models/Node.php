@@ -270,19 +270,6 @@ class Node extends Model
     }
 
     /**
-     * Returns a boolean if the node is viable for an additional server to be placed on it.
-     */
-    public function isViable(int $memory = 0, int $disk = 0): bool
-    {
-        $this->loadServerSums();
-
-        $memoryLimit = $this->memory * (1.0 + ($this->memory_overallocate / 100.0));
-        $diskLimit = $this->disk * (1.0 + ($this->disk_overallocate / 100.0));
-
-        return ($this->sum_memory + $memory) <= $memoryLimit && ($this->sum_disk + $disk) <= $diskLimit;
-    }
-
-    /**
      * Returns an array of memory, disk and allocations used compared to the total limit
      * as a percent rounded to 1.S.F.
      */
