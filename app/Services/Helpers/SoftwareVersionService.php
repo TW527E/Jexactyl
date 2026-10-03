@@ -137,8 +137,9 @@ class SoftwareVersionService
     {
         return $this->cache->remember(self::VERSION_CACHE_KEY, CarbonImmutable::now()->addMinutes(config('everest.cdn.cache_time', 60)), function () {
             try {
-                $panel = Http::get(config('everest.cdn.panel_url'));
-                $wings = Http::get(config('everest.cdn.wings_url'));
+                // Short timeouts: a slow GitHub must not hang the admin overview page.
+                $panel = Http::timeout(5)->get(config('everest.cdn.panel_url'));
+                $wings = Http::timeout(5)->get(config('everest.cdn.wings_url'));
 
                 if ($panel->status() !== 200 || $wings->status() !== 200) {
                     throw new CdnVersionFetchingException();

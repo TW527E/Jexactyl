@@ -35,9 +35,8 @@ class UserCreationService
             $data['password'] = $this->hasher->make($data['password']);
         }
 
-        $this->connection->beginTransaction();
-        if (!isset($data['password']) || empty($data['password'])) {
-            $generateResetToken = true;
+        $generateResetToken = empty($data['password']);
+        if ($generateResetToken) {
             $data['password'] = $this->hasher->make(str_random(30));
         }
 
@@ -45,16 +44,20 @@ class UserCreationService
         // in ForgotPasswordController — an encrypted value can never match a bcrypt check.
         $data['recovery_code'] = $this->hasher->make(str_random(32));
 
+        // A closure transaction rolls back when creation throws, rather than leaving the
+        // connection stuck mid-transaction for the rest of the request.
         /** @var User $user */
-        $user = $this->repository->create(array_merge($data, [
-            'uuid' => Uuid::uuid4()->toString(),
-        ]), true, true);
+        $user = $this->connection->transaction(function () use ($data, $generateResetToken) {
+            $user = $this->repository->create(array_merge($data, [
+                'uuid' => Uuid::uuid4()->toString(),
+            ]), true, true);
 
-        if (isset($generateResetToken)) {
-            $token = $this->passwordBroker->createToken($user);
-        }
+            if ($generateResetToken) {
+                $this->passwordBroker->createToken($user);
+            }
 
-        $this->connection->commit();
+            return $user;
+        });
 
         Activity::event('user:user.create')
             ->subject($user)

@@ -50,7 +50,8 @@ class RequireTwoFactorAuthentication
         // there is nothing to be gained by pushing those users towards TOTP enrolment.
         //
         // If the level is set as admin and the user is not an admin, pass them through as well.
-        if (!$twoFactorRequired || $user->use_totp || $request->session()->get('auth_passkey', false)) {
+        // API key requests carry no session at all, so there is no passkey login to look up.
+        if (!$twoFactorRequired || $user->use_totp || ($request->hasSession() && $request->session()->get('auth_passkey', false))) {
             return $next($request);
         }
 
