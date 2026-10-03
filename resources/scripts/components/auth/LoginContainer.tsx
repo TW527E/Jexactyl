@@ -26,6 +26,8 @@ interface Values {
 function LoginContainer() {
     const ref = useRef<Reaptcha>(null);
     const token = useRef('');
+    // The SSO provider waiting on the invisible reCAPTCHA, if it was an SSO button that ran it.
+    const pendingOauth = useRef<string | null>(null);
 
     const [passkeyPending, setPasskeyPending] = useState(false);
 
@@ -33,7 +35,7 @@ function LoginContainer() {
     const modules = useStoreState(state => state.everest.data!.auth.modules);
     const registration = useStoreState(state => state.everest.data!.auth.registration.enabled);
 
-    const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const { enabled: recaptchaEnabled, siteKey } = useStoreState(state => state.settings.data!.recaptcha);
 
     const navigate = useNavigate();
@@ -42,13 +44,24 @@ function LoginContainer() {
 
     useEffect(() => {
         clearFlashes();
+
+        // A failed SSO callback lands back here with the reason rendered into the page.
+        const auth = window as { AuthError?: string };
+        if (auth.AuthError) {
+            addFlash({ type: 'error', title: 'Error', message: auth.AuthError });
+            delete auth.AuthError;
+        }
     }, []);
 
-    const useOauth = (name: string) => {
+    const oauthLogin = (name: string) => {
+        clearFlashes();
+
         if (recaptchaEnabled && !token.current) {
+            pendingOauth.current = name;
             ref.current!.execute().catch(error => {
                 console.error(error);
 
+                pendingOauth.current = null;
                 clearAndAddHttpError({ error });
             });
 
@@ -60,7 +73,13 @@ function LoginContainer() {
                 // @ts-expect-error this is fine
                 window.location = url;
             })
-            .catch(error => clearAndAddHttpError({ key: 'auth:register', error }));
+            .catch(error => {
+                // reCAPTCHA tokens are single use.
+                token.current = '';
+                if (ref.current) ref.current.reset();
+
+                clearAndAddHttpError({ error });
+            });
     };
 
     const usePasskey = () => {
@@ -193,7 +212,15 @@ function LoginContainer() {
                             sitekey={siteKey || '_invalid_key'}
                             onVerify={response => {
                                 token.current = response;
-                                submitForm();
+
+                                const provider = pendingOauth.current;
+                                pendingOauth.current = null;
+
+                                if (provider) {
+                                    oauthLogin(provider);
+                                } else {
+                                    submitForm();
+                                }
                             }}
                             onExpire={() => {
                                 setSubmitting(false);
@@ -206,12 +233,16 @@ function LoginContainer() {
                     )}
                     <div className={'mt-4 w-full grid gap-4 grid-cols-2'}>
                         {modules.discord.enabled && (
-                            <Button.Info type={'button'} onClick={() => useOauth('discord')} size={Button.Sizes.Small}>
+                            <Button.Info
+                                type={'button'}
+                                onClick={() => oauthLogin('discord')}
+                                size={Button.Sizes.Small}
+                            >
                                 <FontAwesomeIcon icon={faDiscord} className={'mr-2 my-auto'} /> Use Discord SSO
                             </Button.Info>
                         )}
                         {modules.google.enabled && (
-                            <Button.Text type={'button'} onClick={() => useOauth('google')} size={Button.Sizes.Small}>
+                            <Button.Text type={'button'} onClick={() => oauthLogin('google')} size={Button.Sizes.Small}>
                                 <FontAwesomeIcon icon={faGoogle} className={'mr-2 my-auto'} /> Use Google SSO
                             </Button.Text>
                         )}

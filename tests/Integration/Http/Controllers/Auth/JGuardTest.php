@@ -144,8 +144,8 @@ class JGuardTest extends HttpTestCase
         $this->withServerVariables(['REMOTE_ADDR' => $ip])
             ->withSession(['discord_oauth2_state' => 'expected-state'])
             ->get(route('auth.modules.discord.authenticate', ['code' => 'auth-code', 'state' => 'expected-state']))
-            ->assertBadRequest()
-            ->assertJsonPath('errors.0.detail', 'Too many recent signups or failed login attempts have been detected from your network. Please try again later.');
+            ->assertRedirect(route('auth.login'))
+            ->assertSessionHas('auth_error', 'Too many recent signups or failed login attempts have been detected from your network. Please try again later.');
 
         $this->assertFalse(User::where('email', 'discord-alt@example.com')->exists());
     }

@@ -122,7 +122,7 @@ abstract class AbstractLoginController extends ApplicationApiController
      * TOTP enabled we must route the browser through the same `/auth/login/checkpoint` flow
      * used for password logins instead of logging them in immediately.
      */
-    protected function completeOAuthLogin(User $user, Request $request, string $intended): RedirectResponse
+    protected function completeOAuthLogin(User $user, Request $request): RedirectResponse
     {
         if ($user->use_totp) {
             $request->session()->put('auth_confirmation_token', [
@@ -138,7 +138,27 @@ abstract class AbstractLoginController extends ApplicationApiController
 
         $this->sendLoginResponse($user, $request);
 
-        return redirect($intended);
+        return redirect($this->redirectPath());
+    }
+
+    /**
+     * Runs an OAuth callback, sending the browser back to the login page with the reason when
+     * it fails. Left alone, a DisplayException would redirect "back" — to the provider — and
+     * anything else would render a bare error page.
+     */
+    protected function handleOAuthCallback(string $provider, \Closure $callback): RedirectResponse
+    {
+        try {
+            return $callback();
+        } catch (DisplayException $exception) {
+            $message = $exception->getMessage();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            $message = "Unable to sign in with {$provider}, please try again.";
+        }
+
+        return redirect()->route('auth.login')->with('auth_error', $message);
     }
 
     /**
@@ -165,6 +185,13 @@ abstract class AbstractLoginController extends ApplicationApiController
         }
 
         $user = $this->creation->handle($data);
+
+        // An OAuth sign-up has no password of its own. UserCreationService fills in a random
+        // one nobody knows, which would leave the account asking for a "current password" it
+        // can never supply — keep it empty so it is treated as SSO-only instead.
+        if (empty($data['password'])) {
+            $user->forceFill(['password' => ''])->saveOrFail();
+        }
 
         if ($guard) {
             $this->jguard->recordAttempt($request->ip(), JGuardAttempt::TYPE_REGISTRATION);
