@@ -10,6 +10,7 @@ use Everest\Http\Controllers\Controller;
 use Everest\Extensions\Backups\BackupManager;
 use Everest\Extensions\Filesystem\S3Filesystem;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class BackupRemoteUploadController extends Controller
@@ -40,6 +41,11 @@ class BackupRemoteUploadController extends Controller
 
         /** @var Backup $backup */
         $backup = Backup::query()->where('uuid', $backup)->firstOrFail();
+
+        // Only the node that hosts the server may act on its backups.
+        if ($backup->server->node_id !== $request->attributes->get('node')->id) {
+            throw new NotFoundHttpException();
+        }
 
         // Prevent backups that have already been completed from trying to
         // be uploaded again.

@@ -41,7 +41,15 @@ class ServerDetailsController extends ApplicationApiController
         $node = $request->attributes->get('node');
 
         $server = $this->repository->getByUuid($uuid);
-        if ($server->node_id !== $node->id) {
+
+        // While a transfer is running the target node has to fetch the configuration to
+        // create the server, even though node_id still points at the source node.
+        $transfer = $server->transfer;
+        $allowed = $transfer
+            ? in_array($node->id, [$transfer->old_node, $transfer->new_node], true)
+            : $server->node_id === $node->id;
+
+        if (!$allowed) {
             // Don't reveal that a server with this UUID exists on a different node.
             throw new NotFoundHttpException();
         }

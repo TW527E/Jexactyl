@@ -11,6 +11,7 @@ use Everest\Exceptions\DisplayException;
 use Everest\Extensions\Backups\BackupManager;
 use Everest\Extensions\Filesystem\S3Filesystem;
 use Everest\Http\Requests\Api\Remote\ReportBackupCompleteRequest;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
 
@@ -32,6 +33,11 @@ class BackupStatusController extends ApplicationApiController
     {
         /** @var Backup $model */
         $model = Backup::query()->where('uuid', $backup)->firstOrFail();
+
+        // Only the node that hosts the server may act on its backups.
+        if ($model->server->node_id !== $request->attributes->get('node')->id) {
+            throw new NotFoundHttpException();
+        }
 
         if ($model->is_successful) {
             throw new BadRequestHttpException('Cannot update the status of a backup that is already marked as completed.');
@@ -79,6 +85,11 @@ class BackupStatusController extends ApplicationApiController
     {
         /** @var Backup $model */
         $model = Backup::query()->where('uuid', $backup)->firstOrFail();
+
+        // Only the node that hosts the server may act on its backups.
+        if ($model->server->node_id !== $request->attributes->get('node')->id) {
+            throw new NotFoundHttpException();
+        }
 
         $model->server->update(['status' => null]);
 

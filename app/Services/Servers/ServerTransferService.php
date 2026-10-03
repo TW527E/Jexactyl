@@ -3,6 +3,7 @@
 namespace Everest\Services\Servers;
 
 use Everest\Models\Node;
+use Everest\Enum\JwtScope;
 use Everest\Models\Server;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
@@ -94,18 +95,20 @@ class ServerTransferService
                 'new_additional_allocations' => $additional_allocations,
             ]);
 
+            // Generate a token for the target node, which Wings only accepts with the "transfer" scope.
+            $token = $this->jwtService
+                ->setExpiresAt(CarbonImmutable::now()->addMinutes(15))
+                ->setSubject($server->uuid)
+                ->setClaims(['server_uuid' => $server->uuid])
+                ->setScopes(JwtScope::ServerTransfer)
+                ->handle($node, $server->uuid . $transfer->id);
+
+            // Notify the source node to begin the transfer. Doing this inside the transaction
+            // means an unreachable node rolls the transfer back instead of leaving it stuck.
+            $this->daemonTransferRepository->setServer($server)->notify($node, $token);
+
             return $transfer;
         });
-
-        // Generate a token for the transfer.
-        $token = $this->jwtService
-            ->setExpiresAt(CarbonImmutable::now()->addMinutes(15))
-            ->setSubject($server->uuid)
-            ->setClaims(['server_uuid' => $server->uuid])
-            ->handle($node, $server->uuid . $transfer->id);
-
-        // Notify the source node to begin the transfer.
-        $this->daemonTransferRepository->setServer($server)->notify($node, $token);
 
         return $transfer->refresh();
     }
