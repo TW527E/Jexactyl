@@ -5,8 +5,11 @@ namespace Everest\Http\Controllers\Api\Application\Databases;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Everest\Models\DatabaseHost;
+use Illuminate\Http\JsonResponse;
 use Spatie\QueryBuilder\QueryBuilder;
 use Everest\Exceptions\DisplayException;
+use Illuminate\Database\DatabaseManager;
+use Everest\Extensions\DynamicDatabaseConnection;
 use Everest\Services\Databases\Hosts\HostUpdateService;
 use Everest\Services\Databases\Hosts\HostCreationService;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
@@ -23,8 +26,12 @@ class DatabaseController extends ApplicationApiController
     /**
      * DatabaseController constructor.
      */
-    public function __construct(private HostCreationService $creationService, private HostUpdateService $updateService)
-    {
+    public function __construct(
+        private HostCreationService $creationService,
+        private HostUpdateService $updateService,
+        private DynamicDatabaseConnection $dynamic,
+        private DatabaseManager $databaseManager,
+    ) {
         parent::__construct();
     }
 
@@ -52,6 +59,25 @@ class DatabaseController extends ApplicationApiController
     public function view(GetDatabaseRequest $request, DatabaseHost $databaseHost): array
     {
         return $this->transform($databaseHost, DatabaseHostTransformer::class);
+    }
+
+    /**
+     * Checks whether the Panel can log in to a database host with its stored credentials.
+     */
+    public function status(GetDatabaseRequest $request, DatabaseHost $databaseHost): JsonResponse
+    {
+        $this->dynamic->set('dynamic', $databaseHost);
+        // A short timeout so an unreachable host doesn't hang the page.
+        config()->set('database.connections.dynamic.options', [\PDO::ATTR_TIMEOUT => 5]);
+        $this->databaseManager->purge('dynamic');
+
+        try {
+            $this->databaseManager->connection('dynamic')->select('SELECT 1');
+        } catch (\Throwable $exception) {
+            return new JsonResponse(['online' => false, 'error' => $exception->getMessage()]);
+        }
+
+        return new JsonResponse(['online' => true]);
     }
 
     /**

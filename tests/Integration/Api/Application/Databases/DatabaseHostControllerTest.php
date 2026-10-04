@@ -35,6 +35,27 @@ class DatabaseHostControllerTest extends ApplicationApiIntegrationTestCase
             ->assertJsonPath('attributes.name', $host->name);
     }
 
+    public function testReachableHostReportsOnline()
+    {
+        $this->getJson('/api/application/databases/' . $this->host()->id . '/status')
+            ->assertOk()
+            ->assertJsonPath('online', true);
+    }
+
+    public function testUnreachableHostReportsOfflineWithTheReason()
+    {
+        // Check a working host first: a cached "dynamic" connection must not leak into the next check.
+        $this->getJson('/api/application/databases/' . $this->host()->id . '/status')->assertJsonPath('online', true);
+
+        $host = $this->host();
+        $host->update(['port' => 1]);
+
+        $this->getJson('/api/application/databases/' . $host->id . '/status')
+            ->assertOk()
+            ->assertJsonPath('online', false)
+            ->assertJsonStructure(['error']);
+    }
+
     public function testHostCanBeUpdated()
     {
         $host = $this->host();

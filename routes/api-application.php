@@ -231,6 +231,7 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::group(['prefix' => '/databases'], function () {
         Route::get('/', [Application\Databases\DatabaseController::class, 'index']);
         Route::get('/{databaseHost:id}', [Application\Databases\DatabaseController::class, 'view']);
+        Route::get('/{databaseHost:id}/status', [Application\Databases\DatabaseController::class, 'status']);
 
         Route::post('/', [Application\Databases\DatabaseController::class, 'store']);
 
