@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Everest\Exceptions\DisplayException;
 use Laravel\Socialite\Facades\Socialite;
-use Laravel\Socialite\Two\GoogleProvider;
+use Everest\Extensions\Laravel\Socialite\GoogleProvider;
 use Everest\Http\Controllers\Auth\AbstractLoginController;
 
 class GoogleLoginController extends AbstractLoginController
@@ -50,12 +50,23 @@ class GoogleLoginController extends AbstractLoginController
 
     /**
      * Authenticate with the Google OAuth2 service.
-     *
-     * @throws DisplayException
      */
     public function authenticate(Request $request): RedirectResponse
     {
+        return $this->handleOAuthCallback('Google', fn () => $this->handleCallback($request));
+    }
+
+    /**
+     * @throws DisplayException
+     */
+    private function handleCallback(Request $request): RedirectResponse
+    {
         $this->assertEnabled();
+
+        // The user pressed "Cancel" on Google's consent screen.
+        if ($request->has('error') || !$request->filled('code')) {
+            throw new DisplayException('Google login was cancelled.');
+        }
 
         // Socialite validates the OAuth2 "state" parameter against the session for us here,
         // protecting this callback from login-CSRF.
@@ -73,11 +84,11 @@ class GoogleLoginController extends AbstractLoginController
         if (User::where('email', $response->email)->exists()) {
             $user = User::where('email', $response->email)->first();
 
-            return $this->completeOAuthLogin($user, $request, '/');
+            return $this->completeOAuthLogin($user, $request);
         }
         $user = $this->createAccount(['email' => $response->email, 'username' => 'null_user_' . $this->randStr(16)], $request);
 
-        return $this->completeOAuthLogin($user, $request, '/account/setup');
+        return $this->completeOAuthLogin($user, $request);
     }
 
     /**

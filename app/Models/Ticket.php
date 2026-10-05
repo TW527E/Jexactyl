@@ -91,14 +91,6 @@ class Ticket extends Model
     }
 
     /**
-     * Get whether the ticket is in 'resolved' state.
-     */
-    public function isResolved(): bool
-    {
-        return $this->status === self::STATUS_RESOLVED;
-    }
-
-    /**
      * Gets all messages associated with this ticket.
      */
     public function messages(): HasMany

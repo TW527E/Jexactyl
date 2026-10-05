@@ -48,6 +48,17 @@ export const getDatabaseEntry = (id: number, include: string[] = []): Promise<Da
     });
 };
 
+export interface DatabaseStatus {
+    online: boolean;
+    error?: string;
+}
+
+/**
+ * Asks the Panel to log in to the host, since a browser cannot reach a MySQL port itself.
+ */
+export const getDatabaseStatus = (id: number): Promise<DatabaseStatus> =>
+    http.get(`/api/application/databases/${id}/status`).then(({ data }) => data);
+
 export const createDatabaseEntry = (
     name: string,
     host: string,

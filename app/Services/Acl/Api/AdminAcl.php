@@ -54,18 +54,4 @@ class AdminAcl
     {
         return self::can(data_get($key, self::COLUMN_IDENTIFIER . $resource, self::NONE), $action);
     }
-
-    /**
-     * Return a list of all resource constants defined in this ACL.
-     *
-     * @throws \ReflectionException
-     */
-    public static function getResourceList(): array
-    {
-        $reflect = new \ReflectionClass(__CLASS__);
-
-        return collect($reflect->getConstants())->filter(function ($value, $key) {
-            return substr($key, 0, 9) === 'RESOURCE_';
-        })->values()->toArray();
-    }
 }

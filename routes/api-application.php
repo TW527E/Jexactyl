@@ -5,8 +5,6 @@ use Everest\Http\Controllers\Api\Application;
 use Everest\Http\Middleware\Activity\AdminSubject;
 
 Route::middleware([AdminSubject::class])->group(function () {
-    Route::get('/permissions', [Application\ApplicationApiController::class, 'adminPermissions']);
-
     Route::get('/overview/version', [Application\OverviewController::class, 'version']);
     Route::get('/overview/metrics', [Application\OverviewController::class, 'metrics']);
 
@@ -233,6 +231,7 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::group(['prefix' => '/databases'], function () {
         Route::get('/', [Application\Databases\DatabaseController::class, 'index']);
         Route::get('/{databaseHost:id}', [Application\Databases\DatabaseController::class, 'view']);
+        Route::get('/{databaseHost:id}/status', [Application\Databases\DatabaseController::class, 'status']);
 
         Route::post('/', [Application\Databases\DatabaseController::class, 'store']);
 

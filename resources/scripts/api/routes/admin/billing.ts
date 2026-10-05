@@ -16,8 +16,6 @@ import {
 } from '@definitions/admin';
 import { createContext, createPaginatedHook } from '@/api';
 
-export type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
-
 export interface ProductValues {
     categoryUuid: string;
 

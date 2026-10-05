@@ -8,7 +8,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Container\Container;
 use Everest\Http\Controllers\Controller;
 use Everest\Extensions\Spatie\Fractalistic\Fractal;
-use Everest\Services\Permission\AdminPermissionService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use League\Fractal\Pagination\IlluminatePaginatorAdapter;
 
@@ -16,7 +15,6 @@ abstract class ApplicationApiController extends Controller
 {
     protected Fractal $fractal;
     protected Request $request;
-    protected AdminPermissionService $permissionService;
 
     /**
      * ApplicationApiController constructor.
@@ -61,19 +59,6 @@ abstract class ApplicationApiController extends Controller
     protected function returnNoContent(): Response
     {
         return new Response('', Response::HTTP_NO_CONTENT);
-    }
-
-    /**
-     * Return an HTTP/204 response for the API.
-     */
-    protected function adminPermissions(Request $request): array
-    {
-        return [
-            'object' => 'admin_permissions',
-            'attributes' => [
-                'permissions' => $this->permissionService->handle($request->user()),
-            ],
-        ];
     }
 
     protected function transform(mixed $data, string $transformer, ?bool $asCollection = null): array

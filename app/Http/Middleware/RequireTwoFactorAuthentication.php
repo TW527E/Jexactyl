@@ -16,7 +16,7 @@ class RequireTwoFactorAuthentication
     /**
      * The route to redirect a user to enable 2FA.
      */
-    protected string $redirectRoute = '/account';
+    protected string $redirectRoute = '/account/security';
 
     /**
      * Check the user state on the incoming request to determine if they should be allowed to
@@ -45,8 +45,13 @@ class RequireTwoFactorAuthentication
         // If this setting is not configured, or the user is already using 2FA then we can just
         // send them right through, nothing else needs to be checked.
         //
+        // A session established with a passkey is let through too: a discoverable credential
+        // gated behind user verification already satisfies multi-factor authentication, so
+        // there is nothing to be gained by pushing those users towards TOTP enrolment.
+        //
         // If the level is set as admin and the user is not an admin, pass them through as well.
-        if (!$twoFactorRequired || $user->use_totp) {
+        // API key requests carry no session at all, so there is no passkey login to look up.
+        if (!$twoFactorRequired || $user->use_totp || ($request->hasSession() && $request->session()->get('auth_passkey', false))) {
             return $next($request);
         }
 

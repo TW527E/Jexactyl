@@ -33,19 +33,6 @@ class ActivityLogService
     }
 
     /**
-     * Sets the activity logger as having been caused by an anonymous
-     * user type.
-     */
-    public function anonymous(): self
-    {
-        $this->getActivity()->actor_id = null;
-        $this->getActivity()->actor_type = null;
-        $this->getActivity()->setRelation('actor', null);
-
-        return $this;
-    }
-
-    /**
      * Sets the action for this activity log.
      */
     public function event(string $action): self
@@ -189,15 +176,6 @@ class ActivityLogService
         }
 
         return $activity;
-    }
-
-    /**
-     * Returns a cloned instance of the service allowing for the creation of a base
-     * activity log with the ability to change values on the fly without impact.
-     */
-    public function clone(): self
-    {
-        return clone $this;
     }
 
     /**

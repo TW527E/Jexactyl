@@ -59,7 +59,7 @@ class LoginController extends AbstractLoginController
         // continue. Previously this was handled in the 2FA checkpoint, however that has
         // a flaw in which you can discover if an account exists simply by seeing if you
         // can proceed to the next step in the login process.
-        if (!password_verify($request->input('password'), $user->password)) {
+        if (!password_verify((string) $request->input('password'), $user->password)) {
             $this->sendFailedLoginResponse($request, $user);
         }
 

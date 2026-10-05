@@ -1,4 +1,3 @@
-/// <reference types="vitest" />
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { dirname, resolve } from 'pathe';
@@ -12,31 +11,23 @@ const plugins: PluginOption[] = [
             plugins: ['babel-plugin-macros', 'babel-plugin-styled-components'],
         },
     }),
+    laravel({
+        input: 'resources/scripts/index.tsx',
+    }) as PluginOption,
+    compression({
+        algorithms: ['brotliCompress', 'gzip'],
+        include: /\.(js|css|svg|json)$/,
+        threshold: 1024,
+    }) as PluginOption,
 ];
 
-if (process.env.VITEST === undefined) {
-    plugins.push(
-        laravel({
-            input: 'resources/scripts/index.tsx',
-        }) as PluginOption,
-        compression({
-            algorithms: ['brotliCompress', 'gzip'],
-            include: /\.(js|css|svg|json)$/,
-            threshold: 1024,
-        }) as PluginOption,
-    );
-}
-
 export default defineConfig({
-    define:
-        process.env.VITEST === undefined
-            ? {
-                  'process.env': {},
-                  'process.platform': null,
-                  'process.version': null,
-                  'process.versions': null,
-              }
-            : undefined,
+    define: {
+        'process.env': {},
+        'process.platform': null,
+        'process.version': null,
+        'process.versions': null,
+    },
 
     plugins,
 
@@ -103,10 +94,5 @@ export default defineConfig({
             'react/jsx-runtime': 'preact/jsx-runtime',
             'react-dom/test-utils': 'preact/test-utils',
         },
-    },
-
-    test: {
-        environment: 'happy-dom',
-        include: ['resources/scripts/**/*.{spec,test}.{ts,tsx}'],
     },
 });

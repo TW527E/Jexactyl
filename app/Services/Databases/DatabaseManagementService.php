@@ -24,14 +24,6 @@ class DatabaseManagementService
      */
     private const MATCH_NAME_REGEX = '/^(s[\d]+_)(.*)$/';
 
-    /**
-     * Determines if the service should validate the user's ability to create an additional
-     * database for this server. In almost all cases this should be true, but to keep things
-     * flexible you can also set it to false and create more databases than the server is
-     * allocated.
-     */
-    protected bool $validateDatabaseLimit = true;
-
     public function __construct(
         protected ConnectionInterface $connection,
         protected DynamicDatabaseConnection $dynamic,
@@ -52,17 +44,6 @@ class DatabaseManagementService
     }
 
     /**
-     * Set whether this class should validate that the server has enough slots
-     * left before creating the new database.
-     */
-    public function setValidateDatabaseLimit(bool $validate): self
-    {
-        $this->validateDatabaseLimit = $validate;
-
-        return $this;
-    }
-
-    /**
      * Create a new database that is linked to a specific host.
      *
      * @throws \Throwable
@@ -75,12 +56,10 @@ class DatabaseManagementService
             throw new DatabaseClientFeatureNotEnabledException();
         }
 
-        if ($this->validateDatabaseLimit) {
-            // If the server has a limit assigned and we've already reached that limit, throw back
-            // an exception and kill the process.
-            if (!is_null($server->database_limit) && $server->databases()->count() >= $server->database_limit) {
-                throw new TooManyDatabasesException();
-            }
+        // If the server has a limit assigned and we've already reached that limit, throw back
+        // an exception and kill the process.
+        if (!is_null($server->database_limit) && $server->databases()->count() >= $server->database_limit) {
+            throw new TooManyDatabasesException();
         }
 
         // Protect against developer mistakes...

@@ -43,7 +43,9 @@ class ServerTransferController extends ApplicationApiController
             throw new ConflictHttpException('Server is not being transferred.');
         }
 
-        if ($transfer->new_node !== $node->id) {
+        // Either node can report a failure (the source does when pushing the archive fails),
+        // but only the target node can report success.
+        if (!in_array($node->id, [$transfer->old_node, $transfer->new_node], true)) {
             throw new NotFoundHttpException();
         }
 

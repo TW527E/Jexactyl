@@ -7,25 +7,6 @@ use Everest\Models\EggVariable;
 
 class EnvironmentService
 {
-    private array $additional = [];
-
-    /**
-     * Dynamically configure additional environment variables to be assigned
-     * with a specific server.
-     */
-    public function setEnvironmentKey(string $key, callable $closure): void
-    {
-        $this->additional[$key] = $closure;
-    }
-
-    /**
-     * Return the dynamically added additional keys.
-     */
-    public function getEnvironmentKeys(): array
-    {
-        return $this->additional;
-    }
-
     /**
      * Take all of the environment variables configured for this server and return
      * them in an easy to process format.
@@ -49,11 +30,6 @@ class EnvironmentService
                 $key,
                 is_callable($object) ? call_user_func($object, $server) : object_get($server, $object)
             );
-        }
-
-        // Process dynamically included environment variables.
-        foreach ($this->additional as $key => $closure) {
-            $variables->put($key, call_user_func($closure, $server));
         }
 
         return $variables->toArray();

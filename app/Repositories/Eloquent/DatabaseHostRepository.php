@@ -3,7 +3,6 @@
 namespace Everest\Repositories\Eloquent;
 
 use Everest\Models\DatabaseHost;
-use Illuminate\Support\Collection;
 use Everest\Contracts\Repository\DatabaseHostRepositoryInterface;
 
 class DatabaseHostRepository extends EloquentRepository implements DatabaseHostRepositoryInterface
@@ -14,14 +13,5 @@ class DatabaseHostRepository extends EloquentRepository implements DatabaseHostR
     public function model(): string
     {
         return DatabaseHost::class;
-    }
-
-    /**
-     * Return database hosts with a count of databases and the node
-     * information for which it is attached.
-     */
-    public function getWithViewDetails(): Collection
-    {
-        return $this->getBuilder()->withCount('databases')->with('node')->get();
     }
 }

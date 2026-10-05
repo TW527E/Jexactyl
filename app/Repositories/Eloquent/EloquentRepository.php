@@ -21,18 +21,6 @@ abstract class EloquentRepository extends Repository implements RepositoryInterf
     protected bool $useRequestFilters = false;
 
     /**
-     * Determines if the repository function should use filters off the request object
-     * present when returning results. This allows repository methods to be called in API
-     * context's such that we can pass through ?filter[name]=Dane&sort=desc for example.
-     */
-    public function usingRequestFilters(bool $usingFilters = true): self
-    {
-        $this->useRequestFilters = $usingFilters;
-
-        return $this;
-    }
-
-    /**
      * Returns the request instance.
      */
     protected function request(): Request
@@ -182,25 +170,6 @@ abstract class EloquentRepository extends Repository implements RepositoryInterf
     }
 
     /**
-     * Update a model using the attributes passed.
-     */
-    public function updateWhere(array $attributes, array $values): int
-    {
-        return $this->getBuilder()->where($attributes)->update($values);
-    }
-
-    /**
-     * Perform a mass update where matching records are updated using whereIn.
-     * This does not perform any model data validation.
-     */
-    public function updateWhereIn(string $column, array $values, array $fields): int
-    {
-        Assert::notEmpty($column, 'First argument passed to updateWhereIn must be a non-empty string.');
-
-        return $this->getBuilder()->whereIn($column, $values)->update($fields);
-    }
-
-    /**
      * Update a record if it exists in the database, otherwise create it.
      *
      * @throws DataValidationException
@@ -229,14 +198,6 @@ abstract class EloquentRepository extends Repository implements RepositoryInterf
     public function all(): Collection
     {
         return $this->getBuilder()->get($this->getColumns());
-    }
-
-    /**
-     * Return a paginated result set using a search term if set on the repository.
-     */
-    public function paginated(int $perPage): LengthAwarePaginator
-    {
-        return $this->getBuilder()->paginate($perPage, $this->getColumns());
     }
 
     /**

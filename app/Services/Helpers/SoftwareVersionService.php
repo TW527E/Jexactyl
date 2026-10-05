@@ -4,7 +4,6 @@ namespace Everest\Services\Helpers;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Everest\Exceptions\Service\Helper\CdnVersionFetchingException;
@@ -59,18 +58,6 @@ class SoftwareVersionService
         }
 
         return version_compare($version, $this->getLatestPanel()) >= 0;
-    }
-
-    /**
-     * Determine if a passed daemon version string is the latest.
-     */
-    public function isLatestWings(string $version): bool
-    {
-        if ($version === 'develop' || Str::startsWith($version, 'dev-')) {
-            return true;
-        }
-
-        return version_compare($version, $this->getLatestWings()) >= 0;
     }
 
     /**
@@ -137,8 +124,9 @@ class SoftwareVersionService
     {
         return $this->cache->remember(self::VERSION_CACHE_KEY, CarbonImmutable::now()->addMinutes(config('everest.cdn.cache_time', 60)), function () {
             try {
-                $panel = Http::get(config('everest.cdn.panel_url'));
-                $wings = Http::get(config('everest.cdn.wings_url'));
+                // Short timeouts: a slow GitHub must not hang the admin overview page.
+                $panel = Http::timeout(5)->get(config('everest.cdn.panel_url'));
+                $wings = Http::timeout(5)->get(config('everest.cdn.wings_url'));
 
                 if ($panel->status() !== 200 || $wings->status() !== 200) {
                     throw new CdnVersionFetchingException();

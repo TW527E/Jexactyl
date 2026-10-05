@@ -141,7 +141,7 @@ class ServerController extends ApplicationApiController
     public function update(UpdateServerRequest $request, Server $server): array
     {
         $server = $this->buildModificationService->handle($server, $request->validated());
-        $server = $this->detailsModificationService->returnUpdatedModel()->handle($server, $request->validated());
+        $server = $this->detailsModificationService->handle($server, $request->validated());
 
         Activity::event('admin:servers:update')
             ->subject($server)

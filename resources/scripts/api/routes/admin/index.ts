@@ -2,8 +2,6 @@ export interface Model {
     relationships: Record<string, unknown>;
 }
 
-export type UUID = string;
-
 /**
  * Marks the provided relationships keys as present in the given model
  * rather than being optional to improve typing responses.
@@ -20,8 +18,6 @@ export type WithRelationships<M extends Model, R extends string> = Omit<M, 'rela
  *
  * type EggT = InferModel<typeof getEgg>;
  */
-export type InferModel<T extends (...args: any) => any> = ReturnType<T> extends Promise<infer U> ? U : T;
-
 /**
  * Helper function that just returns the model you pass in, but types the model
  * such that TypeScript understands the relationships on it. This is just to help

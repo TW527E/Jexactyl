@@ -33,6 +33,7 @@ class Order extends Model
     public const STATUS_FAILED = 'failed';
     public const STATUS_EXPIRED = 'expired';
     public const STATUS_PENDING = 'pending';
+    public const STATUS_PROCESSING = 'processing';
     public const STATUS_PROCESSED = 'processed';
 
     public const TYPE_NEW = 'new';
@@ -74,7 +75,7 @@ class Order extends Model
         'user_id' => 'required|exists:users,id',
         'description' => 'required|string|min:3',
         'total' => 'required|min:0',
-        'status' => 'required|in:expired,pending,failed,processed',
+        'status' => 'required|in:expired,pending,processing,failed,processed',
         'product_id' => 'exists:products,id',
         'type' => 'required|in:new,upgrade,renewal',
         'threat_index' => 'nullable|int|min:-1|max:100',
@@ -112,45 +113,6 @@ class Order extends Model
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class, 'order_id');
-    }
-
-    /**
-     * Return whether a payment must be collected for this order.
-     */
-    public function requiresPayment(): bool
-    {
-        if ($this->total > 0.0) {
-            return true;
-        }
-
-        return false;
-
-    }
-
-    /**
-     * Return whether this order has already been processed.
-     */
-    public function isProcessed(): bool
-    {
-        if ($this->status === Order::STATUS_PROCESSED) {
-            return true;
-        }
-
-        return false;
-
-    }
-
-    /**
-     * Return whether this order is a renewal or new server.
-     */
-    public function isRenewal(): bool
-    {
-        if ($this->type === Order::TYPE_RENEWAL) {
-            return true;
-        }
-
-        return false;
-
     }
 
     /**

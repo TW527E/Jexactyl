@@ -105,7 +105,7 @@ export default () => {
                                                 {database.username}
                                             </td>
                                             <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                <DatabaseStatus database={database.getAddress()} />
+                                                <DatabaseStatus id={database.id} />
                                             </td>
                                         </TableRow>
                                     ))}

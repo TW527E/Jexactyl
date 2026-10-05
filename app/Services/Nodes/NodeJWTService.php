@@ -7,6 +7,7 @@ use Everest\Models\User;
 use Everest\Enum\JwtScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
+use Webmozart\Assert\Assert;
 use Lcobucci\JWT\Token\Plain;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
@@ -103,9 +104,9 @@ class NodeJWTService
         // Wings validates a space-delimited "scope" claim on every JWT it receives.
         // Without it, requests such as websocket authentication are rejected with
         // "There was an error validating the credentials provided for the websocket."
-        if (!empty($this->scopes)) {
-            $builder = $builder->withClaim('scope', implode(' ', array_map(fn (JwtScope $scope) => $scope->value, $this->scopes)));
-        }
+        Assert::notEmpty($this->scopes, 'Cannot generate a JWT without providing at least one scope.');
+
+        $builder = $builder->withClaim('scope', implode(' ', array_map(fn (JwtScope $scope) => $scope->value, $this->scopes)));
 
         if (!is_null($this->user)) {
             $builder = $builder

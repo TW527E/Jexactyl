@@ -107,18 +107,6 @@ class DiscountCode extends Model
     }
 
     /**
-     * A helper function to apply a discount code to an order.
-     */
-    public function apply(int $amount): int
-    {
-        if ($this->type === self::TYPE_PERCENTAGE) {
-            return max(0, $amount - intval($amount * ($this->value / 100)));
-        }
-
-        return max(0, $amount - $this->value);
-    }
-
-    /**
      * Decrement the amount of uses available to this code.
      */
     public function use(): void

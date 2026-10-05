@@ -1,32 +1,28 @@
-import useFlash from '@/plugins/useFlash';
-import { useState, useEffect } from 'react';
-import Spinner from '@/elements/Spinner';
+import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExclamationTriangle, faHeart } from '@fortawesome/free-solid-svg-icons';
-import classNames from 'classnames';
+import { faCheckCircle, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { httpErrorToHuman } from '@/api/http';
+import { DatabaseStatus, getDatabaseStatus } from '@/api/routes/admin/databases';
+import Spinner from '@/elements/Spinner';
+import Tooltip from '@/elements/tooltip/Tooltip';
 
-export default ({ database, className }: { database: string; className?: string }) => {
-    const { clearFlashes } = useFlash();
-    const [error, setError] = useState<boolean>(false);
-
-    const [loading, setLoading] = useState(true);
-    const [status, setStatus] = useState<boolean>();
+export default ({ id }: { id: number }) => {
+    const [status, setStatus] = useState<DatabaseStatus | null>(null);
 
     useEffect(() => {
-        clearFlashes('node');
+        getDatabaseStatus(id)
+            .then(setStatus)
+            .catch(error => setStatus({ online: false, error: httpErrorToHuman(error) }));
+    }, [id]);
 
-        fetch(database, { method: 'no-cors' })
-            .then(() => setStatus(true))
-            .catch(() => setError(true))
-            .then(() => setLoading(false));
-    }, []);
-
-    if (loading) return <Spinner size={'small'} />;
+    if (!status) return <Spinner size={'small'} />;
 
     return (
-        <FontAwesomeIcon
-            icon={error ? faExclamationTriangle : faHeart}
-            className={classNames(className, status ? 'text-green-400' : 'text-red-400', 'animate-pulse text-lg')}
-        />
+        <Tooltip placement={'top'} content={status.online ? 'Connected' : status.error || 'Unable to connect'}>
+            <FontAwesomeIcon
+                icon={status.online ? faCheckCircle : faExclamationTriangle}
+                className={status.online ? 'text-lg text-green-400' : 'text-lg text-red-400'}
+            />
+        </Tooltip>
     );
 };

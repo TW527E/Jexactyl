@@ -80,7 +80,7 @@ class LoginCheckpointController extends AbstractLoginController
                 $decrypted,
                 $request->input('authentication_code') ?? '',
                 $oldTimestamp,
-                config('Everest.auth.2fa.window') ?? 1,
+                config('everest.auth.2fa.window') ?? 1,
             );
 
             if ($verified !== false) {

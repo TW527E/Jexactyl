@@ -1,13 +1,14 @@
 import { useStoreState } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
-import { useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Reaptcha from 'reaptcha';
 import tw from 'twin.macro';
 import { object, string } from 'yup';
 
 import { login, externalLogin } from '@/api/routes/auth/login';
+import { passkeyLogin, passkeysSupported, isPasskeyCancellation } from '@/api/routes/auth/passkey';
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
 import Field from '@/elements/Field';
 import { Button } from '@/elements/button';
@@ -15,7 +16,7 @@ import useFlash from '@/plugins/useFlash';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDiscord, faGoogle } from '@fortawesome/free-brands-svg-icons';
 import Label from '@/elements/Label';
-import { faAt, faEnvelope, faKey } from '@fortawesome/free-solid-svg-icons';
+import { faAt, faEnvelope, faFingerprint, faKey } from '@fortawesome/free-solid-svg-icons';
 
 interface Values {
     username: string;
@@ -25,25 +26,42 @@ interface Values {
 function LoginContainer() {
     const ref = useRef<Reaptcha>(null);
     const token = useRef('');
+    // The SSO provider waiting on the invisible reCAPTCHA, if it was an SSO button that ran it.
+    const pendingOauth = useRef<string | null>(null);
+
+    const [passkeyPending, setPasskeyPending] = useState(false);
 
     const appName = useStoreState(state => state.settings.data!.name);
     const modules = useStoreState(state => state.everest.data!.auth.modules);
     const registration = useStoreState(state => state.everest.data!.auth.registration.enabled);
 
-    const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const { enabled: recaptchaEnabled, siteKey } = useStoreState(state => state.settings.data!.recaptcha);
 
     const navigate = useNavigate();
+    const location = useLocation();
+    const from = (location.state as { from?: string } | null)?.from;
 
     useEffect(() => {
         clearFlashes();
+
+        // A failed SSO callback lands back here with the reason rendered into the page.
+        const auth = window as { AuthError?: string };
+        if (auth.AuthError) {
+            addFlash({ type: 'error', title: 'Error', message: auth.AuthError });
+            delete auth.AuthError;
+        }
     }, []);
 
-    const useOauth = (name: string) => {
+    const oauthLogin = (name: string) => {
+        clearFlashes();
+
         if (recaptchaEnabled && !token.current) {
+            pendingOauth.current = name;
             ref.current!.execute().catch(error => {
                 console.error(error);
 
+                pendingOauth.current = null;
                 clearAndAddHttpError({ error });
             });
 
@@ -55,7 +73,35 @@ function LoginContainer() {
                 // @ts-expect-error this is fine
                 window.location = url;
             })
-            .catch(error => clearAndAddHttpError({ key: 'auth:register', error }));
+            .catch(error => {
+                // reCAPTCHA tokens are single use.
+                token.current = '';
+                if (ref.current) ref.current.reset();
+
+                clearAndAddHttpError({ error });
+            });
+    };
+
+    const usePasskey = () => {
+        if (passkeyPending) return;
+
+        clearFlashes();
+        setPasskeyPending(true);
+
+        passkeyLogin()
+            .then(response => {
+                // @ts-expect-error this is valid
+                window.location = from || response.intended || '/';
+            })
+            .catch(error => {
+                setPasskeyPending(false);
+
+                // Dismissing the OS prompt is not a failure worth shouting about.
+                if (isPasskeyCancellation(error)) return;
+
+                console.error(error);
+                clearAndAddHttpError({ error });
+            });
     };
 
     const onSubmit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
@@ -78,11 +124,11 @@ function LoginContainer() {
             .then(response => {
                 if (response.complete) {
                     // @ts-expect-error this is valid
-                    window.location = response.intended || '/';
+                    window.location = from || response.intended || '/';
                     return;
                 }
 
-                navigate('/auth/login/checkpoint', { state: { token: response.confirmationToken } });
+                navigate('/auth/login/checkpoint', { state: { token: response.confirmationToken, from } });
             })
             .catch(error => {
                 console.error(error);
@@ -144,6 +190,21 @@ function LoginContainer() {
                             Login
                         </Button>
                     </div>
+                    {passkeysSupported() && (
+                        <div css={tw`mt-3`}>
+                            {/* `loading` is what disables this button — Button overrides any
+                                explicit `disabled` prop with it. */}
+                            <Button.Text
+                                type={'button'}
+                                onClick={usePasskey}
+                                loading={passkeyPending}
+                                className={'w-full'}
+                            >
+                                <FontAwesomeIcon icon={faFingerprint} className={'mr-2 my-auto'} /> Or, Sign in with a
+                                Passkey
+                            </Button.Text>
+                        </div>
+                    )}
                     {recaptchaEnabled && (
                         <Reaptcha
                             ref={ref}
@@ -151,7 +212,15 @@ function LoginContainer() {
                             sitekey={siteKey || '_invalid_key'}
                             onVerify={response => {
                                 token.current = response;
-                                submitForm();
+
+                                const provider = pendingOauth.current;
+                                pendingOauth.current = null;
+
+                                if (provider) {
+                                    oauthLogin(provider);
+                                } else {
+                                    submitForm();
+                                }
                             }}
                             onExpire={() => {
                                 setSubmitting(false);
@@ -164,12 +233,16 @@ function LoginContainer() {
                     )}
                     <div className={'mt-4 w-full grid gap-4 grid-cols-2'}>
                         {modules.discord.enabled && (
-                            <Button.Info type={'button'} onClick={() => useOauth('discord')} size={Button.Sizes.Small}>
+                            <Button.Info
+                                type={'button'}
+                                onClick={() => oauthLogin('discord')}
+                                size={Button.Sizes.Small}
+                            >
                                 <FontAwesomeIcon icon={faDiscord} className={'mr-2 my-auto'} /> Use Discord SSO
                             </Button.Info>
                         )}
                         {modules.google.enabled && (
-                            <Button.Text type={'button'} onClick={() => useOauth('google')} size={Button.Sizes.Small}>
+                            <Button.Text type={'button'} onClick={() => oauthLogin('google')} size={Button.Sizes.Small}>
                                 <FontAwesomeIcon icon={faGoogle} className={'mr-2 my-auto'} /> Use Google SSO
                             </Button.Text>
                         )}

@@ -5,7 +5,11 @@ namespace Everest\Http\Controllers\Api\Application\Databases;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Everest\Models\DatabaseHost;
+use Illuminate\Http\JsonResponse;
 use Spatie\QueryBuilder\QueryBuilder;
+use Everest\Exceptions\DisplayException;
+use Illuminate\Database\DatabaseManager;
+use Everest\Extensions\DynamicDatabaseConnection;
 use Everest\Services\Databases\Hosts\HostUpdateService;
 use Everest\Services\Databases\Hosts\HostCreationService;
 use Everest\Exceptions\Http\QueryValueOutOfRangeHttpException;
@@ -22,8 +26,12 @@ class DatabaseController extends ApplicationApiController
     /**
      * DatabaseController constructor.
      */
-    public function __construct(private HostCreationService $creationService, private HostUpdateService $updateService)
-    {
+    public function __construct(
+        private HostCreationService $creationService,
+        private HostUpdateService $updateService,
+        private DynamicDatabaseConnection $dynamic,
+        private DatabaseManager $databaseManager,
+    ) {
         parent::__construct();
     }
 
@@ -48,9 +56,28 @@ class DatabaseController extends ApplicationApiController
     /**
      * Returns a single database host.
      */
-    public function view(GetDatabaseRequest $request, DatabaseHost $database): array
+    public function view(GetDatabaseRequest $request, DatabaseHost $databaseHost): array
     {
-        return $this->transform($database, DatabaseHostTransformer::class);
+        return $this->transform($databaseHost, DatabaseHostTransformer::class);
+    }
+
+    /**
+     * Checks whether the Panel can log in to a database host with its stored credentials.
+     */
+    public function status(GetDatabaseRequest $request, DatabaseHost $databaseHost): JsonResponse
+    {
+        $this->dynamic->set('dynamic', $databaseHost);
+        // A short timeout so an unreachable host doesn't hang the page.
+        config()->set('database.connections.dynamic.options', [\PDO::ATTR_TIMEOUT => 5]);
+        $this->databaseManager->purge('dynamic');
+
+        try {
+            $this->databaseManager->connection('dynamic')->select('SELECT 1');
+        } catch (\Throwable $exception) {
+            return new JsonResponse(['online' => false, 'error' => $exception->getMessage()]);
+        }
+
+        return new JsonResponse(['online' => true]);
     }
 
     /**
@@ -76,9 +103,9 @@ class DatabaseController extends ApplicationApiController
      *
      * @throws \Throwable
      */
-    public function update(UpdateDatabaseRequest $request, DatabaseHost $database): array
+    public function update(UpdateDatabaseRequest $request, DatabaseHost $databaseHost): array
     {
-        $database = $this->updateService->handle($database->id, $request->validated());
+        $database = $this->updateService->handle($databaseHost->id, $request->validated());
 
         Activity::event('admin:database-hosts:update')
             ->subject($database)
@@ -95,13 +122,18 @@ class DatabaseController extends ApplicationApiController
      *
      * @throws \Exception
      */
-    public function delete(DeleteDatabaseRequest $request, DatabaseHost $database): Response
+    public function delete(DeleteDatabaseRequest $request, DatabaseHost $databaseHost): Response
     {
-        $database->delete();
+        // The databases table holds a restricting foreign key to its host.
+        if ($databaseHost->databases()->exists()) {
+            throw new DisplayException('Cannot delete a database host that still has databases attached to it.');
+        }
+
+        $databaseHost->delete();
 
         Activity::event('admin:database-hosts:delete')
-            ->subject($database)
-            ->property('database-host', $database)
+            ->subject($databaseHost)
+            ->property('database-host', $databaseHost)
             ->description('A database host was deleted')
             ->log();
 

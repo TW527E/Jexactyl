@@ -5,7 +5,6 @@ namespace Everest\Contracts\Repository;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface RepositoryInterface
 {
@@ -101,12 +100,6 @@ interface RepositoryInterface
     public function update(int $id, array $fields, bool $validate = true, bool $force = false): mixed;
 
     /**
-     * Perform a mass update where matching records are updated using whereIn.
-     * This does not perform any model data validation.
-     */
-    public function updateWhereIn(string $column, array $values, array $fields): int;
-
-    /**
      * Update a record if it exists in the database, otherwise create it.
      *
      * @throws \Everest\Exceptions\Model\DataValidationException
@@ -117,11 +110,6 @@ interface RepositoryInterface
      * Return all records associated with the given model.
      */
     public function all(): Collection;
-
-    /**
-     * Return a paginated result set using a search term if set on the repository.
-     */
-    public function paginated(int $perPage): LengthAwarePaginator;
 
     /**
      * Insert a single or multiple records into the database at once skipping

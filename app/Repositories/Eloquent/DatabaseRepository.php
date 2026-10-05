@@ -3,10 +3,8 @@
 namespace Everest\Repositories\Eloquent;
 
 use Everest\Models\Database;
-use Illuminate\Support\Collection;
 use Illuminate\Foundation\Application;
 use Illuminate\Database\DatabaseManager;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Everest\Contracts\Repository\DatabaseRepositoryInterface;
 
 class DatabaseRepository extends EloquentRepository implements DatabaseRepositoryInterface
@@ -35,34 +33,6 @@ class DatabaseRepository extends EloquentRepository implements DatabaseRepositor
     public function getConnection(): string
     {
         return $this->connection;
-    }
-
-    /**
-     * Set the connection name to execute statements against.
-     */
-    public function setConnection(string $connection): self
-    {
-        $this->connection = $connection;
-
-        return $this;
-    }
-
-    /**
-     * Return all the databases belonging to a server.
-     */
-    public function getDatabasesForServer(int $server): Collection
-    {
-        return $this->getBuilder()->with('host')->where('server_id', $server)->get($this->getColumns());
-    }
-
-    /**
-     * Return all the databases for a given host with the server relationship loaded.
-     */
-    public function getDatabasesForHost(int $host, int $count = 25): LengthAwarePaginator
-    {
-        return $this->getBuilder()->with('server')
-            ->where('database_host_id', $host)
-            ->paginate($count, $this->getColumns());
     }
 
     /**

@@ -19,7 +19,7 @@ export default ({ databaseId, onDeleted }: Props) => {
 
     const onDelete = () => {
         setLoading(true);
-        clearFlashes('admin:databases');
+        clearFlashes('database');
 
         deleteDatabase(databaseId)
             .then(() => {
@@ -28,7 +28,7 @@ export default ({ databaseId, onDeleted }: Props) => {
             })
             .catch(error => {
                 console.error(error);
-                clearAndAddHttpError({ key: 'admin:databases', error });
+                clearAndAddHttpError({ key: 'database', error });
 
                 setLoading(false);
                 setVisible(false);
